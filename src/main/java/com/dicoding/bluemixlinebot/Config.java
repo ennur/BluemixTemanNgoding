@@ -22,9 +22,9 @@ public class Config
     @Bean
     public DataSource getDataSource()
     {
-        String dbUrl=System.getenv("JDBC_DATABASE_URL");
-        String username=System.getenv("JDBC_DATABASE_USERNAME");
-        String password=System.getenv("JDBC_DATABASE_PASSWORD");
+        String dbUrl="postgres://u67fe2e06394b4484b5f3c8a4b7cd1264:pf27ac364f78e47f4aadede05cb434ae6@50.23.230.142:5433/d5ceddac87cfb4133944798eae75c85fc";
+        String username="u67fe2e06394b4484b5f3c8a4b7cd1264";
+        String password="pf27ac364f78e47f4aadede05cb434ae6";
 
         DriverManagerDataSource ds=new DriverManagerDataSource();
         ds.setDriverClassName("org.postgresql.Driver");
