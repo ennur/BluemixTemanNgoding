@@ -1,5 +1,5 @@
 applications:
-- path: build/libs/bluemixlinebot.war
+- path: build/libs/bluemixlinebot-0.1.0.war
   memory: 512M
   instances: 1
   domain: mybluemix.net
