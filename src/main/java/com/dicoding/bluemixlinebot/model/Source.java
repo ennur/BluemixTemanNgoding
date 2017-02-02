@@ -1,4 +1,4 @@
-package com.dicoding.bluemixlinebot;
+package com.dicoding.bluemixlinebot.model;
 
 public class Source {
     public String userId;

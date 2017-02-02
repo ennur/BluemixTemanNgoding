@@ -1,4 +1,4 @@
-package com.dicoding.bluemixlinebot;
+package com.dicoding.bluemixlinebot.model;
 
 public class Events {
     public String type;

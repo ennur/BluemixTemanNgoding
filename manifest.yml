@@ -3,6 +3,8 @@ applications:
   memory: 512M
   instances: 1
   domain: mybluemix.net
-  name: <your_bluemix_app_name>
-  host: <your_bluemix_app_host>
+  name: BluemixTemanNgoding
+  host: BluemixTemanNgoding
   disk_quota: 1024M
+  services:
+    - psqlNgoding
