@@ -6,6 +6,7 @@ buildscript
 {
 	repositories
 	{
+		jcenter()
 		mavenCentral()
 	}
 
@@ -26,6 +27,7 @@ war
 repositories
 {
 	jcenter()
+	mavenCentral()
 }
 
 configurations

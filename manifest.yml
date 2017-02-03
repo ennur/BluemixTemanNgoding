@@ -3,8 +3,8 @@ applications:
   memory: 512M
   instances: 1
   domain: mybluemix.net
-  name: BluemixTemanNgoding
-  host: BluemixTemanNgoding
+  name: LineBotDB
+  host: LineBotDB
   disk_quota: 1024M
   services:
-    - postgresql01
+    - pos
