@@ -14,7 +14,6 @@ import com.linecorp.bot.model.PushMessage;
 import com.linecorp.bot.model.ReplyMessage;
 import com.linecorp.bot.model.action.MessageAction;
 import com.linecorp.bot.model.action.URIAction;
-import com.linecorp.bot.model.message.ImageMessage;
 import com.linecorp.bot.model.message.TemplateMessage;
 import com.linecorp.bot.model.message.TextMessage;
 import com.linecorp.bot.model.message.template.ButtonsTemplate;
@@ -26,7 +25,6 @@ import org.apache.http.HttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.nio.client.CloseableHttpAsyncClient;
 import org.apache.http.impl.nio.client.HttpAsyncClients;
-import org.jsoup.Jsoup;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.HttpStatus;
@@ -136,8 +134,7 @@ public class LineBotController
                         leaveGR(payload.events[0].source.roomId, "room");
                     }
                 }
-                
-//                pushType(idTarget, msgText + " - " + payload.events[0].source.type);
+
             }
         }
          
@@ -204,16 +201,6 @@ public class LineBotController
 
     private void getEventData(String userTxt, Payload ePayload, String targetID) throws IOException{
 
-//        if (title.indexOf("\"") == -1){
-//            replyToUser(ePayload.events[0].replyToken, "Unknown keyword");
-//            return;
-//        }
-//
-//        title = title.substring(title.indexOf("\"") + 1, title.lastIndexOf("\""));
-//        System.out.println("Index: " + Integer.toString(title.indexOf("\"")));
-//        title = title.replace(" ", "+");
-//        System.out.println("Text from User: " + title);
-
         // Act as client with GET method
         String URI = "https://www.dicoding.com/public/api/events";
         System.out.println("URI: " +  URI);
@@ -262,17 +249,6 @@ public class LineBotController
                 carouselForUser(ePayload.events[0].source.userId);
             }
 
-
-//        //Check whether response successfully retrieve or not
-//        if (msgToUser.length() <= 11 || !ePayload.events[0].message.type.equals("text")){
-//            replyToUser(ePayload.events[0].replyToken, "Request Timeout");
-//        } else {
-//            replyToUser(ePayload.events[0].replyToken, msgToUser);
-//        }
-    }
-
-    public static String html2text(String html) {
-        return Jsoup.parse(html).text();
     }
 
     //Method for reply user's message
@@ -312,23 +288,6 @@ public class LineBotController
             displayName = profile.getDisplayName();
         } else {
             System.out.println(response.code() + " " + response.message());
-        }
-    }
-    
-    //Method for send movie's poster to user
-    private void pushPoster(String sourceId, String poster_url){
-        ImageMessage imageMessage = new ImageMessage(poster_url, poster_url);
-        PushMessage pushMessage = new PushMessage(sourceId,imageMessage);
-        try {
-            Response<BotApiResponse> response = LineMessagingServiceBuilder
-                .create(lChannelAccessToken)
-                .build()
-                .pushMessage(pushMessage)
-                .execute();
-            System.out.println(response.code() + " " + response.message());
-        } catch (IOException e) {
-            System.out.println("Exception is raised ");
-            e.printStackTrace();
         }
     }
     
@@ -420,10 +379,6 @@ public class LineBotController
     {
         System.out.println("message text: " + aText + " from: " + aUserId);
 
-//        if (aText.indexOf("\"") == -1){
-//            replyToUser(aReplyToken, "Unknown keyword");
-//            return;
-//        }
 
         String [] words=aText.trim().split("\\s+");
         String intent=words[0];
