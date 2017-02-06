@@ -1,8 +1,8 @@
 
 package com.dicoding.bluemixlinebot;
 
-import com.dicoding.bluemixlinebot.dao.UserDao;
-import com.dicoding.bluemixlinebot.dao.UserDaoImpl;
+import com.dicoding.bluemixlinebot.dao.Dao;
+import com.dicoding.bluemixlinebot.dao.DaoImpl;
 import org.cloudfoundry.runtime.env.CloudEnvironment;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
@@ -78,8 +78,8 @@ public class Config
     }
 
     @Bean
-    public UserDao getPersonDao()
+    public Dao getPersonDao()
     {
-        return new UserDaoImpl(getDataSource());
+        return new DaoImpl(getDataSource());
     }
 };

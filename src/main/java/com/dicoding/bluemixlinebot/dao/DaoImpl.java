@@ -14,7 +14,7 @@ import java.sql.SQLException;
 import java.util.List;
 import java.util.Vector;
 
-public class UserDaoImpl implements UserDao
+public class DaoImpl implements Dao
 {
     private final static String SQL_SELECT_ALL="SELECT id, user_id, line_id, display_name FROM user_table";
     private final static String SQL_GET_BY_LINE_ID=SQL_SELECT_ALL + " WHERE LOWER(user_id) LIKE LOWER(?);";
@@ -109,7 +109,7 @@ public class UserDaoImpl implements UserDao
         }
     };
 
-    public UserDaoImpl(DataSource aDataSource)
+    public DaoImpl(DataSource aDataSource)
     {
         mJdbc=new JdbcTemplate(aDataSource);
     }

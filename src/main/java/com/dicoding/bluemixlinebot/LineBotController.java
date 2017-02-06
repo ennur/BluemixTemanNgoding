@@ -1,7 +1,7 @@
 
 package com.dicoding.bluemixlinebot;
 
-import com.dicoding.bluemixlinebot.dao.UserDao;
+import com.dicoding.bluemixlinebot.dao.Dao;
 import com.dicoding.bluemixlinebot.model.Event;
 import com.dicoding.bluemixlinebot.model.JoinEvent;
 import com.dicoding.bluemixlinebot.model.Payload;
@@ -43,16 +43,18 @@ import java.util.concurrent.Future;
 @RequestMapping(value="/linebot")
 public class LineBotController
 {
+    //inisialisasi channel secret
     @Autowired
     @Qualifier("com.linecorp.channel_secret")
     String lChannelSecret;
-    
+
+    //inisialisasi channel access token
     @Autowired
     @Qualifier("com.linecorp.channel_access_token")
     String lChannelAccessToken;
 
     @Autowired
-    UserDao mDao;
+    Dao mDao;
 
     private String displayName;
     private Payload payload;
@@ -61,33 +63,33 @@ public class LineBotController
 
     @RequestMapping(value="/callback", method= RequestMethod.POST)
     public ResponseEntity<String> callback(
-        @RequestHeader("X-Line-Signature") String aXLineSignature,
-        @RequestBody String aPayload)
+            @RequestHeader("X-Line-Signature") String aXLineSignature,
+            @RequestBody String aPayload)
     {
-         // compose body
+        // compose body
         final String text=String.format("The Signature is: %s",
-            (aXLineSignature!=null && aXLineSignature.length() > 0) ? aXLineSignature : "N/A");
-        
+                (aXLineSignature!=null && aXLineSignature.length() > 0) ? aXLineSignature : "N/A");
+
         System.out.println(text);
-        
+
         final boolean valid=new LineSignatureValidator(lChannelSecret.getBytes()).validateSignature(aPayload.getBytes(), aXLineSignature);
-        
+
         System.out.println("The signature is: " + (valid ? "valid" : "tidak valid"));
-        
+
         //Get events from source
         if(aPayload!=null && aPayload.length() > 0)
         {
             System.out.println("Payload: " + aPayload);
         }
-        
+
         Gson gson = new Gson();
         payload = gson.fromJson(aPayload, Payload.class);
-        
+
         //Variable initialization
         String msgText = " ";
         String idTarget = " ";
         String eventType = payload.events[0].type;
-        
+
         //Get event's type
         if (eventType.equals("join")){
             if (payload.events[0].source.type.equals("group")){
@@ -107,7 +109,7 @@ public class LineBotController
             } else if (payload.events[0].source.type.equals("user")){
                 idTarget = payload.events[0].source.userId;
             }
-            
+
             //Parsing message from user
             if (!payload.events[0].message.type.equals("text")){
                 greetingMessage();
@@ -115,7 +117,7 @@ public class LineBotController
 
                 msgText = payload.events[0].message.text;
                 msgText = msgText.toLowerCase();
-                
+
                 if (!msgText.contains("bot leave")){
                     if (msgText.contains("id") || msgText.contains("find") || msgText.contains("join")|| msgText.contains("teman")){
                         processText(payload.events[0].replyToken, idTarget, msgText);
@@ -137,20 +139,22 @@ public class LineBotController
 
             }
         }
-         
+
         return new ResponseEntity<String>(HttpStatus.OK);
     }
 
+    //method untuk mengirim pesan saat ada user menambahkan bot sebagai teman
     private void greetingMessage(){
         getUserProfile(payload.events[0].source.userId);
         String greetingMsg =
                 "Hi " + displayName + "! Pengen datang ke event developer tapi males sendirian? Aku bisa mencarikan kamu pasangan.";
         String action = "Lihat daftar event";
         String title = "Welcome";
-        buttonTemplate(greetingMsg, action, title);
+        buttonTemplate(greetingMsg, action, action, title);
 
     }
 
+    //method untuk mengirimkan pesan ke semua teman
     private void multicastMsg(String eventID, String userID){
         List<String> listId = new ArrayList<>();
         List<JoinEvent> self=mDao.getByEventId("%"+eventID+"%");
@@ -181,9 +185,10 @@ public class LineBotController
         }
     }
 
-    private void buttonTemplate(String message, String action, String title){
+    //method untuk membuat button template
+    private void buttonTemplate(String message, String label, String action, String title){
         ButtonsTemplate buttonsTemplate = new ButtonsTemplate(null, null, message,
-                Collections.singletonList(new MessageAction(action, action)));
+                Collections.singletonList(new MessageAction(label, action)));
         TemplateMessage templateMessage = new TemplateMessage(title, buttonsTemplate);
         PushMessage pushMessage = new PushMessage(payload.events[0].source.userId, templateMessage);
         try {
@@ -199,6 +204,7 @@ public class LineBotController
         }
     }
 
+    //method untuk memanggil dicoding event open api
     private void getEventData(String userTxt, Payload ePayload, String targetID) throws IOException{
 
         // Act as client with GET method
@@ -206,27 +212,27 @@ public class LineBotController
         System.out.println("URI: " +  URI);
 
         CloseableHttpAsyncClient c = HttpAsyncClients.createDefault();
-        
+
         try{
             c.start();
             //Use HTTP Get to retrieve data
             HttpGet get = new HttpGet(URI);
-            
+
             Future<HttpResponse> future = c.execute(get, null);
             HttpResponse responseGet = future.get();
             System.out.println("HTTP executed");
             System.out.println("HTTP Status of response: " + responseGet.getStatusLine().getStatusCode());
-            
+
             // Get the response from the GET request
             BufferedReader brd = new BufferedReader(new InputStreamReader(responseGet.getEntity().getContent()));
-            
+
             StringBuffer resultGet = new StringBuffer();
             String lineGet = "";
             while ((lineGet = brd.readLine()) != null) {
                 resultGet.append(lineGet);
             }
             System.out.println("Got result");
-            
+
             // Change type of resultGet to JSONObject
             jObjGet = resultGet.toString();
             System.out.println("Event responses: " + jObjGet);
@@ -236,31 +242,32 @@ public class LineBotController
         } finally {
             c.close();
         }
-        
+
         Gson mGson = new Gson();
         Event event = mGson.fromJson(jObjGet, Event.class);
 
-            if (userTxt.equals("lihat daftar event")){
-                pushMessage(targetID, "Aku akan mencarikan event aktif di dicoding! Dengan syarat : Kasih tau dong LINE ID kamu :) Contoh : id \"john\"");
-            }
-            else if (userTxt.contains("summary")){
-                pushMessage(targetID, event.getData().get(Integer.parseInt(String.valueOf(userTxt.charAt(1)))-1).getSummary());
-            } else if (userTxt.contains("tampilkan")){
-                carouselForUser(ePayload.events[0].source.userId);
-            }
-
+        if (userTxt.equals("lihat daftar event")){
+            pushMessage(targetID, "Aku akan mencarikan event aktif di dicoding! Dengan syarat : Kasih tau dong LINE ID kamu (pake \'id @\' ya). Contoh :");
+            pushMessage(targetID, "id @john");
+        }
+        else if (userTxt.contains("summary")){
+            pushMessage(targetID, event.getData().get(Integer.parseInt(String.valueOf(userTxt.charAt(1)))-1).getSummary());
+        } else {
+            pushMessage(targetID, "Hi "+displayName+", aku belum  mengerti maksud kamu. Silahkan ikuti petunjuk ya :)");
+            greetingMessage();
+        }
     }
 
-    //Method for reply user's message
+    //Method untuk reply message
     private void replyToUser(String rToken, String messageToUser){
         TextMessage textMessage = new TextMessage(messageToUser);
         ReplyMessage replyMessage = new ReplyMessage(rToken, textMessage);
         try {
             Response<BotApiResponse> response = LineMessagingServiceBuilder
-                .create(lChannelAccessToken)
-                .build()
-                .replyMessage(replyMessage)
-                .execute();
+                    .create(lChannelAccessToken)
+                    .build()
+                    .replyMessage(replyMessage)
+                    .execute();
             System.out.println("Reply Message: " + response.code() + " " + response.message());
         } catch (IOException e) {
             System.out.println("Exception is raised ");
@@ -268,6 +275,7 @@ public class LineBotController
         }
     }
 
+    //method untuk mendapatkan profile user (user id, display name, image, status)
     private void getUserProfile(String userId){
         Response<UserProfileResponse> response =
                 null;
@@ -290,17 +298,17 @@ public class LineBotController
             System.out.println(response.code() + " " + response.message());
         }
     }
-    
-    //Method for push message to user
+
+    //Method untuk push message
     private void pushMessage(String sourceId, String txt){
         TextMessage textMessage = new TextMessage(txt);
         PushMessage pushMessage = new PushMessage(sourceId,textMessage);
         try {
             Response<BotApiResponse> response = LineMessagingServiceBuilder
-            .create(lChannelAccessToken)
-            .build()
-            .pushMessage(pushMessage)
-            .execute();
+                    .create(lChannelAccessToken)
+                    .build()
+                    .pushMessage(pushMessage)
+                    .execute();
             System.out.println(response.code() + " " + response.message());
         } catch (IOException e) {
             System.out.println("Exception is raised ");
@@ -308,53 +316,30 @@ public class LineBotController
         }
     }
 
-    private void carouselForUser(String sourceId){
+    //method untuk template message berupa carousel
+    private void carouselTemplateMessage(String sourceId){
         Gson mGson = new Gson();
         Event event = mGson.fromJson(jObjGet, Event.class);
 
         int i;
-        List<CarouselColumn> carouselColumnList = Collections.emptyList();
+        String image, owner, name, id, link;
+        CarouselColumn column;
+        List<CarouselColumn> carouselColumn = new ArrayList<>();
+        for (i = 0; i < event.getData().size(); i++){
+            image = event.getData().get(i).getImage_path();
+            owner = event.getData().get(i).getOwner_display_name();
+            name = event.getData().get(i).getName();
+            id = String.valueOf(event.getData().get(i).getId());
+            link = event.getData().get(i).getLink();
 
-        for (i = 0; i<= event.getData().size(); i++){
-            carouselColumnList.add(new CarouselColumn
-                    (event.getData().get(i).getImage_path(), event.getData().get(i).getOwner_display_name(),
-                            event.getData().get(i).getName().substring(0, (event.getData().get(i).getName().length() < 60) ? event.getData().get(i).getName().length() : 60), Arrays.asList
-                            (new MessageAction("Summary", "[" + String.valueOf(i) + "]" + " Summary : " + event.getData().get(i).getName()),
-                                    new URIAction("View Page", event.getData().get(i).getLink()),
-                                    new MessageAction("Join Event", "join event #" + event.getData().get(i).getId()))));
-
+            column = new CarouselColumn(image, name.substring(0, (name.length() < 40)?name.length():40), owner,
+                    Arrays.asList(new MessageAction("Summary", "["+String.valueOf(i)+"]"+" Summary : " + name),
+                            new URIAction("View Page", link),
+                            new MessageAction("Join Event", "join event #"+id)));
+            carouselColumn.add(column);
         }
 
-
-
-        List<CarouselColumn> carouselColumns = Arrays.asList(new CarouselColumn
-                        (event.getData().get(0).getImage_path(), event.getData().get(0).getOwner_display_name(),
-                                event.getData().get(0).getName().substring(0, (event.getData().get(0).getName().length() < 60) ? event.getData().get(0).getName().length() : 60), Arrays.asList
-                                (new MessageAction("Summary", "[" + String.valueOf(1) + "]" + " Summary : " + event.getData().get(0).getName()),
-                                        new URIAction("View Page", event.getData().get(0).getLink()),
-                                        new MessageAction("Join Event", "join event #" + event.getData().get(0).getId()))),
-                new CarouselColumn
-                        (event.getData().get(1).getImage_path(), event.getData().get(1).getOwner_display_name(),
-                                event.getData().get(1).getName().substring(0, (event.getData().get(1).getName().length() < 60) ? event.getData().get(1).getName().length() : 60), Arrays.asList
-                                (new MessageAction("Summary", "[" + String.valueOf(2) + "]" + " Summary : " + event.getData().get(1).getName()),
-                                        new URIAction("View Page", event.getData().get(1).getLink()),
-                                        new MessageAction("Join Event", "join event #" + event.getData().get(1).getId()))),
-                new CarouselColumn
-                        (event.getData().get(2).getImage_path(), event.getData().get(2).getOwner_display_name(),
-                                event.getData().get(2).getName().substring(0, (event.getData().get(2).getName().length() < 60) ? event.getData().get(2).getName().length() : 60), Arrays.asList
-                                (new MessageAction("Summary", "[" + String.valueOf(3) + "]" + " Summary : " + event.getData().get(2).getName()),
-                                        new URIAction("View Page", event.getData().get(2).getLink()),
-                                        new MessageAction("Join Event", "join event #" + event.getData().get(2).getId()))),
-                new CarouselColumn
-                        (event.getData().get(3).getImage_path(), event.getData().get(3).getOwner_display_name(),
-                                event.getData().get(3).getName().substring(0, (event.getData().get(3).getName().length() < 60) ? event.getData().get(3).getName().length() : 60), Arrays.asList
-                                (new MessageAction("Sumarry", "[" + String.valueOf(4) + "]" + " Summary : " + event.getData().get(3).getName()),
-                                        new URIAction("View Page", event.getData().get(3).getLink()),
-                                        new MessageAction("Join Event", "join event #" + event.getData().get(3).getId()))));
-
-
-        CarouselTemplate carouselTemplate = new CarouselTemplate(carouselColumnList);
-
+        CarouselTemplate carouselTemplate = new CarouselTemplate(carouselColumn);
         TemplateMessage templateMessage = new TemplateMessage("Your search result", carouselTemplate);
         PushMessage pushMessage = new PushMessage(sourceId,templateMessage);
         try {
@@ -375,17 +360,17 @@ public class LineBotController
         try {
             if (type.equals("group")){
                 Response<BotApiResponse> response = LineMessagingServiceBuilder
-                    .create(lChannelAccessToken)
-                    .build()
-                    .leaveGroup(id)
-                    .execute();
+                        .create(lChannelAccessToken)
+                        .build()
+                        .leaveGroup(id)
+                        .execute();
                 System.out.println(response.code() + " " + response.message());
             } else if (type.equals("room")){
                 Response<BotApiResponse> response = LineMessagingServiceBuilder
-                    .create(lChannelAccessToken)
-                    .build()
-                    .leaveRoom(id)
-                    .execute();
+                        .create(lChannelAccessToken)
+                        .build()
+                        .leaveRoom(id)
+                        .execute();
                 System.out.println(response.code() + " " + response.message());
             }
         } catch (IOException e) {
@@ -394,10 +379,10 @@ public class LineBotController
         }
     }
 
+    //method yang berisi keyword dan trigger yang berhubungan dengan database
     private void processText(String aReplyToken, String aUserId, String aText)
     {
         System.out.println("message text: " + aText + " from: " + aUserId);
-
 
         String [] words=aText.trim().split("\\s+");
         String intent=words[0];
@@ -416,12 +401,12 @@ public class LineBotController
             }
             else
             {
-                lineId = aText.substring(aText.indexOf("\"") + 1, aText.lastIndexOf("\""));
+                lineId = aText.substring(aText.indexOf("@") + 1);
                 getUserProfile(payload.events[0].source.userId);
                 String status = regLineID(aUserId, lineId, displayName);
-                String message = status+"\nHi, berikut adalah event aktif yang bisa kamu pilih";
-                buttonTemplate(message, "tampilkan", "Daftar Event");
-
+                String message = status+"\nHi, berikut adalah event aktif yang bisa kamu pilih :";
+                pushMessage(aUserId, message);
+                carouselTemplateMessage(aUserId);
                 return;
             }
         }
@@ -447,6 +432,7 @@ public class LineBotController
         }
     }
 
+    //method mendaftarkan LINE ID
     private String regLineID(String aUserId, String aLineId, String aDisplayName){
         String regStatus;
         String exist = findUser(aUserId);
@@ -455,21 +441,22 @@ public class LineBotController
             int reg=mDao.registerLineId(aUserId, aLineId, aDisplayName);
             if(reg==1)
             {
-                regStatus="Successfully Registered";
+                regStatus="Yay berhasil mendaftar!";
             }
             else
             {
-                regStatus="Registration process failed";
+                regStatus="yah gagal mendaftar :(";
             }
         }
         else
         {
-            regStatus="Already registered";
+            regStatus="Anda sudah terdaftar";
         }
 
         return regStatus;
     }
 
+    //method untuk mencari user terdaftar di database
     private String findUser(String aUSerId){
         String txt="";
         List<User> self=mDao.getByUserId("%"+aUSerId+"%");
@@ -488,53 +475,37 @@ public class LineBotController
         return txt;
     }
 
-    private String findAllUser(){
-        String txt = null;
-        List<User> self=mDao.get();
-        if(self.size() > 0)
-        {
-            for (int i=0; i<self.size(); i++){
-                User user=self.get(i);
-                txt=getUserString(user);
-            }
-
-        }
-        else
-        {
-            txt="User not found";
-        }
-        return txt;
-    }
-
-    private String getUserString(User aPerson)
+    private String getUserString(User user)
     {
-        return aPerson.line_id;
+        return user.line_id;
     }
 
+    //method untuk bergabung dalam event
     private void joinEvent(String eventID, String aUserId, String lineID, String aDisplayName){
         String joinStatus;
-        String exist = findEventJoin(eventID, aUserId);
+        String exist = findFriend(eventID, aUserId);
         if(Objects.equals(exist, "Event not found"))
         {
             int join =mDao.joinEvent(eventID, aUserId, lineID, aDisplayName);
             if(join ==1)
             {
                 joinStatus="Kamu berhasil bergabung pada event ini. Berikut adalah beberapa teman yang bisa menemani kamu. Silahkan invite LINE ID berikut menjadi teman di LINE kamu ya :)";
-                buttonTemplate(joinStatus, "teman #"+eventID, "List Teman");
+                buttonTemplate(joinStatus, "Lihat Teman","teman #"+eventID, "List Teman");
                 multicastMsg(eventID, aUserId);
             }
             else
             {
-                pushMessage(aUserId, "Join process failed");
+                pushMessage(aUserId, "yah gagal bergabung :(");
             }
         }
         else
         {
-            buttonTemplate("Anda sudah tergabung di event ini", "teman #"+eventID, "List Teman");
+            buttonTemplate("Anda sudah tergabung di event ini", "Lihat Teman","teman #"+eventID, "List Teman");
         }
 
     }
 
+    //method untuk mencari data di table event berdasarkan event id
     private String findEvent(String eventID){
         String txt="Daftar teman di event "+eventID+" :";
         List<JoinEvent> self=mDao.getByEventId("%"+eventID+"%");
@@ -554,7 +525,8 @@ public class LineBotController
         return txt;
     }
 
-    private String findEventJoin(String eventID, String  userID){
+    //method untuk melihat teman terdaftar di dalam suatu event
+    private String findFriend(String eventID, String  userID){
         String txt="Daftar teman di event "+eventID+" :";
         List<JoinEvent> self=mDao.getByJoin(eventID, userID);
         if(self.size() > 0)

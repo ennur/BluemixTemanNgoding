@@ -6,7 +6,7 @@ import com.dicoding.bluemixlinebot.model.User;
 
 import java.util.List;
 
-public interface UserDao
+public interface Dao
 {
     public List<User> get();
     public List<User> getByUserId(String aUserId);
