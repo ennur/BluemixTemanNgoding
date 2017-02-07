@@ -3,8 +3,8 @@ applications:
   memory: 512M
   instances: 1
   domain: mybluemix.net
-  name: LineBotDB
-  host: LineBotDB
+  name: LBTG
+  host: LBTG
   disk_quota: 1024M
   services:
-    - pos
+    - Compose for PostgreSQL-TG
