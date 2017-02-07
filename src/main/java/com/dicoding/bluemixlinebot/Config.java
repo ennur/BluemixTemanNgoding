@@ -34,9 +34,9 @@ public class Config
 
         DriverManagerDataSource ds=new DriverManagerDataSource();
         ds.setDriverClassName("org.postgresql.Driver");
-        ds.setUrl("postgres://admin:NXKIYQXLQXFCQUDC@sl-us-dal-9-portal.2.dblayer.com:19313/compose");
-        ds.setUsername("admin");
-        ds.setPassword("");
+        ds.setUrl(getDBUrl());
+        ds.setUsername(getUser());
+        ds.setPassword(getPass());
 
 
         return ds;
@@ -75,6 +75,21 @@ public class Config
     public String getChannelAccessToken()
     {
         return mEnv.getProperty("com.linecorp.channel_access_token");
+    }
+
+    @Bean(name = "DB_URL")
+    public String getDBUrl(){
+        return mEnv.getProperty("DB_URL");
+    }
+
+    @Bean(name = "DB_USER")
+    public String getUser(){
+        return mEnv.getProperty("DB_USER");
+    }
+
+    @Bean(name = "DB_PASS")
+    public String getPass(){
+        return mEnv.getProperty("DB_PASS");
     }
 
     @Bean
