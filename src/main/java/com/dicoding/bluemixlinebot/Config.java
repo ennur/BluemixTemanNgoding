@@ -34,9 +34,9 @@ public class Config
 
         DriverManagerDataSource ds=new DriverManagerDataSource();
         ds.setDriverClassName("org.postgresql.Driver");
-        ds.setUrl(serviceInfo[0]);
-        ds.setUsername(serviceInfo[1]);
-        ds.setPassword(serviceInfo[2]);
+        ds.setUrl("postgres://admin:NXKIYQXLQXFCQUDC@sl-us-dal-9-portal.2.dblayer.com:19313/compose");
+        ds.setUsername("admin");
+        ds.setPassword("");
 
 
         return ds;
